@@ -188,7 +188,7 @@ class Blockchain {
                         stars.push(data.star)
                     }
                 } catch (error) {
-                    reject(error)
+                   console.error("Error on block data " + b.height, error)
                 }
 
             })
