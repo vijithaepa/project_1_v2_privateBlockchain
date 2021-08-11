@@ -37,7 +37,7 @@ class Block {
      */
     validate() {
         let self = this;
-        return new Promise((resolve, reject) => {
+        return new Promise( (resolve, reject) => {
             // console.log("Validating block ", self, this)
             // Save in auxiliary variable the current block hash
             let currentHash = self.hash
@@ -47,11 +47,13 @@ class Block {
             // Comparing if the hashes changed
             // Returning the Block is not valid
             // console.log("Both hashes for validation " + this, newHash, currentHash)
+            // console.log("validate() : block ", self.height, newHash, currentHash)
             if (newHash !== currentHash) {
-                throw new Error("Data has been tampered!")
+                reject("Data has been tampered! on " + self.height)
             } else {
                 // Returning the Block is valid
-                resolve(self.hash)
+                self.hash = currentHash
+                resolve(true)
             }
         });
     }

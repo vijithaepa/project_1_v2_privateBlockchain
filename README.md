@@ -207,14 +207,17 @@ You should see in your terminal a message indicating that the server is listenin
   ![Request: http://localhost:8000/block/0 ](./img/Capture.PNG)
   
 - POST call to requestValidation
-  ![Request: http://localhost:8000/block/0 ](./img/Capture1.PNG)
+  ![Request: http://localhost:8000/requestValidation](./img/Capture1.PNG)
   
 - sign message with your wallet
   ![Request: http://localhost:8000/block/0 ](./img/Capture2.PNG)
   
 - submit your Star
-  ![Request: http://localhost:8000/block/0 ](./img/Capture3.PNG)
+  ![Request: http://localhost:8000/submitstar](./img/Capture3.PNG)
   
 - GET call to retrieve starts owned by a particular address
-  ![Request: http://localhost:8000/block/0 ](./img/Capture4.PNG)
+  ![Request: http://localhost:8000/blocks/mgj2XJEPsWz6JL8WFpGLkPVmufgGnmwJfm](./img/Capture4.PNG)
+
+- GET call to validateChain
+  ![Request: http://localhost:8000/validateChain](./img/Capture5.PNG)
 

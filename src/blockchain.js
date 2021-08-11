@@ -63,20 +63,26 @@ class Blockchain {
      */
     _addBlock(block) {
         let self = this;
-        return new Promise(async (resolve, reject) => {
-            try {
-                block.height = self.chain.length
-                block.time = new Date().getTime().toString().slice(0, -3)
-                if(self.chain.length > 0) {
-                    block.previousBlockHash = self.chain[self.chain.length -1].hash
-                }
-                block.hash = SHA256(JSON.stringify(block)).toString()
-                self.chain.push(block)
-                resolve(block)
-            } catch (error) {
-                reject("Error on adding the block ", error);
+        this.validateChain().then(errorLog => {
+            if(errorLog && errorLog.size > 0) {
+                throw Error("Failed to validate the chain " + errorLog)
             }
-        });
+            return new Promise(async (resolve, reject) => {
+                try {
+                    block.height = self.chain.length
+                    block.time = new Date().getTime().toString().slice(0, -3)
+                    if(self.chain.length > 0) {
+                        block.previousBlockHash = self.chain[self.chain.length -1].hash
+                    }
+                    block.hash = SHA256(JSON.stringify(block)).toString()
+                    self.chain.push(block)
+                    this.height = block.height
+                    resolve(block)
+                } catch (error) {
+                    reject("Error on adding the block ", error);
+                }
+            });
+        })
     }
 
     /**
@@ -102,7 +108,7 @@ class Blockchain {
      * 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
      * 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
      * 3. Check if the time elapsed is less than 5 minutes
-     * 4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+     * 4. Verify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
      * 5. Create the block and add it to the chain
      * 6. Resolve with the block added.
      * @param {*} address 
@@ -112,19 +118,28 @@ class Blockchain {
      */
     submitStar(address, message, signature, star) {
         let self = this;
-        return new Promise(async (resolve, reject) => {
-            let time = parseInt(message.split(':')[1])
-            let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-            let timeElapsed = currentTime - time;
-            let fiveMins = 5 * 60 * 60
-            console.log("submitStar ", timeElapsed, fiveMins, bitcoinMessage.verify(message, address, signature))
-            if(timeElapsed < fiveMins &&
-                bitcoinMessage.verify(message, address, signature)) {
-                let block = new BlockClass.Block({star: star, signature, address});
-                await this._addBlock(block);
-                resolve(block)
-            }
-        });
+        // return this.validateChain()
+        //     .then((errorLog)=>{
+                return new Promise(async (resolve, reject) => {
+                    // if(errorLog && errorLog.size > 0) {
+                    //     throw Error("Failed to validate the chain " + errorLog)
+                    // }
+                    let time = parseInt(message.split(':')[1])
+                    let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+                    let timeElapsed = currentTime - time;
+                    let fiveMins = 5 * 60
+                    // console.log("submitStar(): ", timeElapsed, fiveMins, bitcoinMessage.verify(message, address, signature))
+                    if(timeElapsed < fiveMins &&
+                        bitcoinMessage.verify(message, address, signature)) {
+                        let block = new BlockClass.Block({star: star, signature, address});
+                        await self._addBlock(block);
+                        // console.log("submitStar(): block added", block)
+                        resolve(block)
+                    } else {
+                        reject("Took longer than 5 mins")
+                    }
+                });
+            // })
     }
 
     /**
@@ -135,7 +150,7 @@ class Blockchain {
      */
     getBlockByHash(hash) {
         let self = this;
-        console.log("Full chain : getBlockByHash", self.chain)
+        // console.log("Full chain : getBlockByHash", self.chain)
         return new Promise((resolve, reject) => {
             let block = self.chain.filter(b => b.hash === hash)[0];
             if(block){
@@ -158,9 +173,9 @@ class Blockchain {
      */
     getBlockByHeight(height) {
         let self = this;
-        console.log("Full chain : getBlockByHeight ", self.chain)
         return new Promise((resolve, reject) => {
             let block = self.chain.filter(p => p.height === height)[0];
+            // console.log("getBlockByHeight():  ", height, block)
             if(block){
                 resolve(block);
             } else {
@@ -183,7 +198,7 @@ class Blockchain {
             self.chain.map(b=> {
                 try{
                     let data = b.getBData()
-                    console.log("Data ", b.height, data.address)
+                    // console.log("Data ", b.height, data.address)
                     if(data && data.address === address) {
                         stars.push(data.star)
                     }
@@ -192,7 +207,7 @@ class Blockchain {
                 }
 
             })
-            console.log("Stars ", stars)
+            // console.log("Stars ", stars)
             resolve(stars)
         });
     }
@@ -207,21 +222,34 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
+            // console.log("validateChain(): chain length ", self.chain.length)
             for (let i = 0; i < self.chain.length; i++) {
-              self.getBlockByHeight(i).then(block => {
-                  block.validate().catch(error => {
-                      errorLog.push(block.height + " : " + error)
-                  })
-                  if(i > 0) {
-                      self.getBlockByHeight(i - 1).then(prevBlock => {
-                          if(prevBlock.hash !== block.previousBlockHash) {
-                              errorLog.push(block.height + " : " + error)
-                          }
-                      })
-                  }
-              })
+                self.getBlockByHeight(i)
+                    .then(block => {
+                        block.validate()
+                            .then(isValid => {
+                                console.log("validateChain(): validate ", block.height, isValid)
+                                resolve(isValid)
+                            })
+                            .then(invalidation => {
+                                console.log("validateChain(): isInvalid " + i, invalidation)
+                                errorLog.push({error: {height: block.height, error: invalidation}})
+                            })
+                            .catch(error => {
+                                console.log("validateChain(): error " + i, error)
+                                errorLog.push({error: {height: block.height, error: error}})
+                            })
+                        // console.log("validateChain(): for height " + i)
+                        if (i > 0) {
+                            self.getBlockByHeight(i - 1).then(prevBlock => {
+                                if (prevBlock.hash !== block.previousBlockHash) {
+                                    errorLog.push(block.height + " : " + "Invalid link to prev block")
+                                }
+                            })
+                        }
+                    })
             }
-
+            // console.log("validateChain(): errorLog ", errorLog)
             resolve(errorLog)
         });
     }
