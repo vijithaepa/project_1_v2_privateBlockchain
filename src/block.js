@@ -48,11 +48,13 @@ class Block {
             // Returning the Block is not valid
             // console.log("Both hashes for validation " + this, newHash, currentHash)
             // console.log("validate() : block ", self.height, newHash, currentHash)
+            self.hash = currentHash
             if (newHash !== currentHash) {
-                reject("Data has been tampered! on " + self.height)
+                // console.log("resolved validation for block " + self.height, false)
+                resolve(false)
             } else {
                 // Returning the Block is valid
-                self.hash = currentHash
+                // console.log("resolved validation for block " + self.height, true)
                 resolve(true)
             }
         });

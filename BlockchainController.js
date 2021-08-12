@@ -71,7 +71,7 @@ class BlockchainController {
                 const star = req.body.star;
                 try {
                     let block = await this.blockchain.submitStar(address, message, signature, star);
-                    console.log("In Controler block ", block)
+                    // console.log("In Controler block ", block)
                     if(block){
                         return res.status(200).json(block);
                     } else {
@@ -130,13 +130,17 @@ class BlockchainController {
     validateChain() {
         this.app.get("/validateChain", async (req, res) => {
             try {
-                let errors = await this.blockchain.validateChain();
-                console.log("Controller validateChain ", errors)
-                if(errors && errors.size > 0){
-                    return res.status(404).json(errors);
-                } else {
-                    return res.status(200).send("Chain is valid");
-                }
+                // let errors = await this.blockchain.validateChain();
+                const errors = await this.blockchain.validateChain()
+
+                    console.log("Controller validateChain ", errors)
+                    if(errors && errors.size > 0){
+                        return res.status(404).json(errors);
+                    } else {
+                        return res.status(200).send("Chain is valid");
+                    }
+
+
             } catch (error) {
                 return res.status(500).send("An error happened!");
             }

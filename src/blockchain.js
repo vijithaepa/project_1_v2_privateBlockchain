@@ -63,7 +63,7 @@ class Blockchain {
      */
     _addBlock(block) {
         let self = this;
-        this.validateChain().then(errorLog => {
+        return this.validateChain().then(errorLog => {
             if(errorLog && errorLog.size > 0) {
                 throw Error("Failed to validate the chain " + errorLog)
             }
@@ -132,9 +132,11 @@ class Blockchain {
                     if(timeElapsed < fiveMins &&
                         bitcoinMessage.verify(message, address, signature)) {
                         let block = new BlockClass.Block({star: star, signature, address});
-                        await self._addBlock(block);
-                        // console.log("submitStar(): block added", block)
-                        resolve(block)
+                        self._addBlock(block).then(blockVal=> {
+                            // console.log("submitStar(): block added", block)
+                            resolve(blockVal)
+                        });
+
                     } else {
                         reject("Took longer than 5 mins")
                     }
@@ -225,15 +227,10 @@ class Blockchain {
             // console.log("validateChain(): chain length ", self.chain.length)
             for (let i = 0; i < self.chain.length; i++) {
                 self.getBlockByHeight(i)
-                    .then(block => {
-                        block.validate()
+                    .then(async block => {
+                        await block.validate()
                             .then(isValid => {
-                                console.log("validateChain(): validate ", block.height, isValid)
                                 resolve(isValid)
-                            })
-                            .then(invalidation => {
-                                console.log("validateChain(): isInvalid " + i, invalidation)
-                                errorLog.push({error: {height: block.height, error: invalidation}})
                             })
                             .catch(error => {
                                 console.log("validateChain(): error " + i, error)
